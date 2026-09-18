@@ -75,8 +75,6 @@ public class GraphReader
             var tokens = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             if (tokens.Length > 0 && tokens.All(t => int.TryParse(t, out _)))
                 return tokens.Select(int.Parse).ToArray();
-
-            // строка не состоит из чисел (например, заголовок "S F") — пропускаем её
         }
 
         throw new FormatException(errorMessage);

@@ -1,0 +1,14 @@
+digraph G {
+    rankdir=LR;
+    node [shape=circle];
+
+    0 [style=filled, fillcolor=lightgreen, label="0\n(S)"];
+    1;
+    2;
+    3;
+    4 [style=filled, fillcolor=lightblue, label="4\n(F)"];
+
+    0 -> 1;
+    1 -> 2;
+    3 -> 4;
+}

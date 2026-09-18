@@ -1,0 +1,18 @@
+digraph G {
+    rankdir=LR;
+    node [shape=circle];
+
+    0 [style=filled, fillcolor=lightgreen, label="0\n(S)"];
+    1 [style=filled, fillcolor=mistyrose];
+    2 [style=filled, fillcolor=mistyrose];
+    3 [style=filled, fillcolor=mistyrose];
+    4 [style=filled, fillcolor=mistyrose];
+    5 [style=filled, fillcolor=lightblue, label="5\n(F)"];
+
+    0 -> 1 [color=red, penwidth=2.5];
+    1 -> 2 [color=red, penwidth=2.5];
+    2 -> 0;
+    2 -> 3 [color=red, penwidth=2.5];
+    3 -> 4 [color=red, penwidth=2.5];
+    4 -> 5 [color=red, penwidth=2.5];
+}
