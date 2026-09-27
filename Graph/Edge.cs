@@ -2,7 +2,6 @@
 
 public struct Edge
 {
-    public int EdgeNum;
     public bool Mark;
     
     public Node From;

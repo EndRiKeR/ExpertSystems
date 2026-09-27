@@ -5,10 +5,10 @@ using ExpertSystems.graph;
 var graphPaths = new[]
 {
     @"C:\Work\Repos\ExpertSystems\Examples\graph.txt",
-    @"C:\Work\Repos\ExpertSystems\Examples\graph_deadend.txt",
-    @"C:\Work\Repos\ExpertSystems\Examples\graph_cycle.txt",
-    @"C:\Work\Repos\ExpertSystems\Examples\graph_nosolution.txt",
-    @"C:\Work\Repos\ExpertSystems\Examples\graph_shortest_vs_long.txt",
+    // @"C:\Work\Repos\ExpertSystems\Examples\graph_deadend.txt",
+    // @"C:\Work\Repos\ExpertSystems\Examples\graph_cycle.txt",
+    // @"C:\Work\Repos\ExpertSystems\Examples\graph_nosolution.txt",
+    // @"C:\Work\Repos\ExpertSystems\Examples\graph_shortest_vs_long.txt",
 };
 
 foreach (var graphPath in graphPaths)
@@ -29,12 +29,10 @@ foreach (var graphPath in graphPaths)
 
     if (answerDepth.Count != 0)
     {
-        Console.WriteLine("Вот решение");
+        Console.WriteLine("Решение:");
         pathDepth = answerDepth.Reverse().ToList();
         foreach (var node in pathDepth)
-        {
             Console.WriteLine(node);
-        }
     }
     else
     {
@@ -61,12 +59,10 @@ foreach (var graphPath in graphPaths)
 
     if (answerWidth.Count != 0)
     {
-        Console.WriteLine("Вот решение");
-        pathWidth = answerWidth.Reverse().ToList();
+        Console.WriteLine("Решение:");
+        pathWidth = answerWidth.ToList();
         foreach (var node in pathWidth)
-        {
             Console.WriteLine(node);
-        }
     }
     else
     {

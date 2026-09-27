@@ -4,23 +4,23 @@ digraph G {
 
     0 [style=filled, fillcolor=lightgreen, label="0\n(S)"];
     1;
-    2;
-    3 [style=filled, fillcolor=mistyrose];
+    2 [style=filled, fillcolor=mistyrose];
+    3;
     4;
-    5 [style=filled, fillcolor=mistyrose];
-    6;
+    5;
+    6 [style=filled, fillcolor=mistyrose];
     7 [style=filled, fillcolor=lightblue, label="7\n(F)"];
 
+    0 -> 2 [color=red, penwidth=2.5];
     0 -> 1;
     1 -> 4;
-    0 -> 3 [color=red, penwidth=2.5];
+    0 -> 3;
     3 -> 4;
     7 -> 4;
     4 -> 5;
-    3 -> 5 [color=red, penwidth=2.5];
-    5 -> 7 [color=red, penwidth=2.5];
-    0 -> 2;
-    2 -> 6;
-    6 -> 7;
+    3 -> 5;
+    5 -> 7;
+    2 -> 6 [color=red, penwidth=2.5];
+    6 -> 7 [color=red, penwidth=2.5];
     3 -> 6;
 }
