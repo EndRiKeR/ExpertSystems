@@ -8,7 +8,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="render_graph.sh" CopyToOutputDirectory="PreserveNewest" />
+      <None Update="lab1\render_graph.sh">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>
