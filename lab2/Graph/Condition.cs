@@ -2,6 +2,7 @@
 
 public enum ConditionMark
 {
+    Denied = -1,
     Opened = 0,
     Closed = 1,
 }
