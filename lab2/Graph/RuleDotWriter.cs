@@ -53,7 +53,7 @@ public static class RuleDotWriter
             var inSolution = solutionRules.Contains(rule);
             var edgeAttrs = inSolution ? " [color=red, penwidth=2.5]" : "";
 
-            sb.Append("    r").Append(i).Append($" [shape=box, label=\"R{i}\"");
+            sb.Append("    r").Append(i).Append($" [shape=box, label=\"R{rule.Num}\"");
             if (inSolution)
                 sb.Append(", style=filled, fillcolor=mistyrose, color=red, penwidth=2.5");
             else if (confirmed.Contains(rule))

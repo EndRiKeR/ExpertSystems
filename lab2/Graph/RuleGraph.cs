@@ -2,7 +2,7 @@
 
 public class RuleGraph
 {
-    public Condition[] Conditions { get; }          // все условия, Num = 0..N-1
+    public Condition[] Conditions { get; }          // уникальные вершины из правил, отсортированные по номеру
     public Rule[] Rules { get; }                    // все правила
     public Condition[] ClosedConditions { get; }    // начальные факты
     public Condition EndCondition { get; }          // цель

@@ -8,7 +8,8 @@ var graphPaths = args.Length > 0
         // @"C:\Work\Repos\ExpertSystems\lab2\Examples\graph.txt",
         // @"C:\Work\Repos\ExpertSystems\lab2\Examples\graphComplex.txt",
         // @"C:\Work\Repos\ExpertSystems\lab2\Examples\graphNoAnswer.txt",
-        @"C:\Work\Repos\ExpertSystems\lab2\Examples\graphWide.txt"
+        //@"C:\Work\Repos\ExpertSystems\lab2\Examples\graphWide.txt"
+        @"C:\Work\Repos\ExpertSystems\lab2\Examples\graphTest.txt"
     };
 
 foreach (var graphPath in graphPaths)
@@ -36,7 +37,7 @@ foreach (var graphPath in graphPaths)
         Console.WriteLine("Решение:");
         solution = search.BuildSolution();
         foreach (var rule in solution)
-            Console.WriteLine($"R{Array.IndexOf(graph.Rules, rule)}: " +
+            Console.WriteLine($"R{rule.Num}: " +
                               $"{string.Join(" & ", rule.In.Select(c => c.Num))} -> {rule.Out.Num}");
     }
     else
@@ -70,7 +71,7 @@ foreach (var graphPath in graphPaths)
     Console.WriteLine($"Доказанные вершины (в порядке доказательства): " +
                       $"{string.Join(", ", closedConditions.Except(graph.ClosedConditions).Select(c => c.Num))}");
     Console.WriteLine($"Запрещенные вершины: {string.Join(", ", depthSearch.DeniedConditions.Select(c => c.Num))}");
-    Console.WriteLine($"Запрещенные правила: {string.Join(", ", depthSearch.DeniedRules.Select(r => $"R{Array.IndexOf(graph.Rules, r)}"))}");
+    Console.WriteLine($"Запрещенные правила: {string.Join(", ", depthSearch.DeniedRules.Select(r => $"R{r.Num}"))}");
 
     solution = null;
 

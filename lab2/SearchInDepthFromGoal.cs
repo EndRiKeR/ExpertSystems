@@ -150,7 +150,7 @@ public class SearchInDepthFromGoal
             {
                 Log($"Вход {ruleCondition.Num} закрыт " +
                     (_conditionToRule.TryGetValue(ruleCondition, out var proofRule)
-                        ? $"(доказан правилом R{_rules.IndexOf(proofRule)})"
+                        ? $"(доказан правилом R{proofRule.Num})"
                         : "(начальный факт)"));
                 continue;
             }
@@ -161,7 +161,7 @@ public class SearchInDepthFromGoal
                 _openRules.Pop(); // убираем правило из стека открытых правил
                 rule.Mark = RuleMark.Denied; // помечаем правило как запрещенное
                 _deniedRules.Add(rule); // записываем его в соответствующий список
-                Log($"Вход {ruleCondition.Num} запрещен - ОТКАТ: правило R{_rules.IndexOf(rule)} запрещено");
+                Log($"Вход {ruleCondition.Num} запрещен - ОТКАТ: правило R{rule.Num} запрещено");
                 Log($"Возвращаемся к подцели {_openConditions.Peek().Num}, для нее будет искаться другое правило");
                 return;
             }
@@ -182,7 +182,7 @@ public class SearchInDepthFromGoal
         _closedConditions.Add(rule.Out); // добавляем в соответствующий список
         _conditionToRule[rule.Out] = rule; // запоминаем, каким правилом доказано условие
 
-        Log($"Все входы закрыты - правило R{_rules.IndexOf(rule)} доказано, вершина {rule.Out.Num} закрыта");
+        Log($"Все входы закрыты - правило R{rule.Num} доказано, вершина {rule.Out.Num} закрыта");
 
         if (rule.Out == _endCondition) // если вершина вывода искомая...
         {
@@ -191,7 +191,7 @@ public class SearchInDepthFromGoal
         }
         else
         {
-            Log($"Поднимаемся к правилу R{_rules.IndexOf(_openRules.Peek())}");
+            Log($"Поднимаемся к правилу R{_openRules.Peek().Num}");
         }
     }
 
@@ -218,7 +218,7 @@ public class SearchInDepthFromGoal
 
         rule.Mark = RuleMark.Denied; // помечаем правило как запрещенное
         _deniedRules.Add(rule); // записываем его в соответствующий список
-        Log($"ОТКАТ: правило R{_rules.IndexOf(rule)}, породившее подцель {subGoal.Num}, запрещено");
+        Log($"ОТКАТ: правило R{rule.Num}, породившее подцель {subGoal.Num}, запрещено");
 
         // на вершине стека снова оказывается подцель-родитель, для нее будет искаться другое правило
         Log($"Возвращаемся к подцели {_openConditions.Peek().Num}, для нее будет искаться другое правило");
@@ -243,14 +243,14 @@ public class SearchInDepthFromGoal
     private void LogStacks()
     {
         Log($"Стек подцелей:    [{string.Join(", ", _openConditions.Reverse().Select(c => c.Num))}]");
-        Log($"Стек правил:      [{string.Join(", ", _openRules.Reverse().Select(r => $"R{_rules.IndexOf(r)}"))}]");
+        Log($"Стек правил:      [{string.Join(", ", _openRules.Reverse().Select(r => $"R{r.Num}"))}]");
         Log($"Закрытые вершины: [{string.Join(", ", _closedConditions.Select(c => c.Num))}]");
     }
 
     // правило в виде "25 <- R1 <- 21 & 22"
     private string RuleToString(Rule rule)
     {
-        return $"{rule.Out.Num} <- R{_rules.IndexOf(rule)} <- {string.Join(" & ", rule.In.Select(c => c.Num))}";
+        return $"{rule.Out.Num} <- R{rule.Num} <- {string.Join(" & ", rule.In.Select(c => c.Num))}";
     }
 
 
@@ -277,7 +277,7 @@ public class SearchInDepthFromGoal
         // вершина уже расписана выше - не повторяем ее поддерево
         if (!printed.Add(condition))
         {
-            Console.WriteLine($"{indent}{condition.Num} - доказана выше правилом R{_rules.IndexOf(rule)}");
+            Console.WriteLine($"{indent}{condition.Num} - доказана выше правилом R{rule.Num}");
             return;
         }
 

@@ -15,45 +15,59 @@ public static class RuleGraphReader
 
     public static RuleGraph ReadFromReader(TextReader reader)
     {
-        // 1. Условия
-        var numConditions = ReadInts(reader, "Ожидалось число условий.")[0];
-        if (numConditions <= 0)
-            throw new FormatException("Число условий должно быть положительным.");
+        // Вершины собираются из входов и выходов правил по уникальным номерам.
+        var conditions = new Dictionary<int, Condition>();
+        Condition GetOrCreateCondition(int num)
+        {
+            if (!conditions.TryGetValue(num, out var condition))
+            {
+                condition = new Condition { Num = num };
+                conditions.Add(num, condition);
+            }
+            return condition;
+        }
 
-        var conditions = new Condition[numConditions];
-        for (var i = 0; i < numConditions; i++)
-            conditions[i] = new Condition { Num = i };
+        Condition GetCondition(int num, string context)
+        {
+            if (!conditions.TryGetValue(num, out var condition))
+                throw new FormatException($"Вершина {num} в \"{context}\" не встречается в правилах.");
+            return condition;
+        }
 
-        // 2. Правила
+        // 1. Правила: номер правила, выходная вершина, входные вершины.
         var numRules = ReadInts(reader, "Ожидалось число правил.")[0];
         if (numRules < 0)
             throw new FormatException("Число правил не может быть отрицательным.");
 
         var rules = new Rule[numRules];
+        var ruleNumbers = new HashSet<int>();
         for (var i = 0; i < numRules; i++)
         {
             var parts = ReadInts(reader, $"Не хватает строк с правилами (ожидалось {numRules}).");
-            if (parts.Length < 1)
-                throw new FormatException($"Строка правила #{i + 1} пуста.");
+            if (parts.Length < 2)
+                throw new FormatException($"Строка правила #{i + 1} должна содержать номер правила и выходную вершину.");
 
-            var outNum = parts[0];
-            ValidateCondition(outNum, numConditions, $"правило #{i + 1}");
+            var ruleNum = parts[0];
+            if (!ruleNumbers.Add(ruleNum))
+                throw new FormatException($"Номер правила R{ruleNum} повторяется.");
 
-            var ins = new Condition[parts.Length - 1];
-            for (var j = 1; j < parts.Length; j++)
+            var outNum = parts[1];
+            var output = GetOrCreateCondition(outNum);
+
+            var ins = new Condition[parts.Length - 2];
+            for (var j = 2; j < parts.Length; j++)
             {
-                ValidateCondition(parts[j], numConditions, $"правило #{i + 1}");
-                ins[j - 1] = conditions[parts[j]];
+                ins[j - 2] = GetOrCreateCondition(parts[j]);
             }
 
-            rules[i] = new Rule(RuleMark.None, ins, conditions[outNum]);
+            rules[i] = new Rule(ruleNum, RuleMark.None, ins, output);
         }
 
-        // 3. Начальные факты
+        // 2. Начальные факты
         var numFacts = ReadInts(reader, "Ожидалось число начальных фактов.")[0];
-        if (numFacts < 0 || numFacts > numConditions)
+        if (numFacts < 0 || numFacts > conditions.Count)
             throw new FormatException(
-                $"Число начальных фактов {numFacts} вне диапазона [0, {numConditions}].");
+                $"Число начальных фактов {numFacts} вне диапазона [0, {conditions.Count}].");
 
         var facts = new List<Condition>(numFacts);
         if (numFacts > 0)
@@ -65,31 +79,23 @@ public static class RuleGraphReader
 
             for (var i = 0; i < numFacts; i++)
             {
-                ValidateCondition(factsLine[i], numConditions, "начальные факты");
-                var c = conditions[factsLine[i]];
+                var c = GetCondition(factsLine[i], "начальные факты");
                 c.Mark = ConditionMark.Closed;
                 facts.Add(c);
             }
         }
 
-        // 4. Целевое условие
+        // 3. Целевое условие
         var goalLine = ReadInts(reader, "Не хватает строки с целевым условием.");
         if (goalLine.Length < 1)
             throw new FormatException("Строка с целью должна содержать одно число.");
-        ValidateCondition(goalLine[0], numConditions, "цель");
+        var goal = GetCondition(goalLine[0], "цель");
 
         return new RuleGraph(
-            conditions,
+            conditions.Values.OrderBy(c => c.Num).ToArray(),
             rules,
             facts.ToArray(),
-            conditions[goalLine[0]]);
-    }
-
-    private static void ValidateCondition(int num, int total, string context)
-    {
-        if (num < 0 || num >= total)
-            throw new FormatException(
-                $"Номер условия {num} в \"{context}\" вне диапазона [0, {total - 1}].");
+            goal);
     }
 
     private static int[] ReadInts(TextReader reader, string errorMessage)

@@ -9,13 +9,15 @@ public enum RuleMark
 
 public class Rule
 {
+    public int Num;
     public RuleMark Mark = RuleMark.None;
 
     public Condition[] In;
     public Condition Out;
 
-    public Rule(RuleMark mark, Condition[] ins, Condition outs)
+    public Rule(int num, RuleMark mark, Condition[] ins, Condition outs)
     {
+        Num = num;
         Mark = mark;
         In = ins;
         Out = outs;
