@@ -8,7 +8,7 @@ var graphPaths = args.Length > 0
         // @"C:\Work\Repos\ExpertSystems\lab2\Examples\graph.txt",
         // @"C:\Work\Repos\ExpertSystems\lab2\Examples\graphComplex.txt",
         // @"C:\Work\Repos\ExpertSystems\lab2\Examples\graphNoAnswer.txt",
-        //@"C:\Work\Repos\ExpertSystems\lab2\Examples\graphWide.txt"
+        // @"C:\Work\Repos\ExpertSystems\lab2\Examples\graphWide.txt",
         @"C:\Work\Repos\ExpertSystems\lab2\Examples\graphTest.txt"
     };
 

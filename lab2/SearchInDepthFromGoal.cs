@@ -70,21 +70,30 @@ public class SearchInDepthFromGoal
         while (!_hasAnswer && !_hasNoAnswer) // пока нет информации о том, если ли решение или нет...
         {
             _step++; // для лога шагов
-
-            // если на вершине стека правило, которому нужно выбрать следующую подцель...
-            if (_openRules.Count == _openConditions.Count)
-            {
-                Labeling(); // ...то размечаем его входные вершины
-                LogStacks();
-                continue;
-            }
-
-            // иначе на вершине стека подцель, для которой нужно найти правило
             var g = Descendants(); // находим потомка
 
-            // если нет правил, которыми можно доказать подцель,...
-            if (g == 0)
-                Backtracking(); // ...то откатываемся назад
+            // пока нет правил, которыми можно доказать подцель (и это не сама цель),...
+            // откат может каскадом подниматься на несколько уровней
+            while (g == 0 && !IsOnlyGoalLeft())
+            {
+                Backtracking(); // ...откатываемся назад...
+                LogStacks();
+
+                _step++;
+                g = Descendants(); // ...и ищем альтернативный путь для предыдущей вершины
+            }
+
+            // если потомков нет, а в стеке открытых вершин осталась только цель - решения нет
+            if (g == 0 && IsOnlyGoalLeft())
+            {
+                if (_endCondition.Mark != ConditionMark.Denied)
+                {
+                    _endCondition.Mark = ConditionMark.Denied; // цель тоже запрещена
+                    _deniedConditions.Add(_endCondition);
+                }
+                Log($"В стеке подцелей осталась только цель {_endCondition.Num}, потомков нет => РЕШЕНИЯ НЕТ");
+                _hasNoAnswer = true; // помечаем флаг, что РЕШЕНИЯ НЕТ
+            }
 
             LogStacks();
         }
@@ -92,46 +101,46 @@ public class SearchInDepthFromGoal
 
     private int Descendants()
     {
-        var subGoal = _openConditions.Peek(); // текущая подцель - вершина стека открытых вершин
+        var subGoal = _openConditions.Peek(); // текущая подцель - голова стека открытых вершин
         LogStep($"Descendants: Ищем правило для подцели {subGoal.Num}");
 
+        // запрещенную подцель раскрыть нельзя (ее уже не удалось доказать в другой ветке)
+        if (subGoal.Mark == ConditionMark.Denied)
+        {
+            Log($"Подцель {subGoal.Num} уже запрещена");
+            return 0;
+        }
+        
         foreach (var rule in _rules) // проходимся по всем правилам
         {
             if (rule.Out != subGoal) // если правило выводит не подцель - пропуск
                 continue;
 
-            if (rule.Mark != RuleMark.None) // если правило уже доказано или запрещено - пропуск
-            {
-                Log($"{RuleToString(rule)} - пропуск, правило уже {(rule.Mark == RuleMark.Denied ? "запрещено" : "доказано")}");
-                continue;
-            }
-
-            if (_openRules.Contains(rule)) // если правило уже открыто - пропуск
-            {
-                Log($"{RuleToString(rule)} - пропуск, правило уже в стеке открытых правил");
-                continue;
-            }
-
-            bool isRuleAvailable = true; // предполагаем, что правило можно использовать
-            foreach (var ruleCondition in rule.In) // для проверки пройдемся по всем входным вершинам
-            {
-                // если вершина запрещена, то правило доказать невозможно
-                // если вершина уже есть в стеке подцелей, то правило приведет к циклу
-                if (ruleCondition.Mark == ConditionMark.Denied || _openConditions.Contains(ruleCondition))
-                {
-                    Log($"{RuleToString(rule)} - пропуск, вход {ruleCondition.Num} " +
-                        (ruleCondition.Mark == ConditionMark.Denied ? "запрещен" : "уже в стеке подцелей (цикл)"));
-                    isRuleAvailable = false; // в обоих случаях правило не подходит, пропускаем его
-                    break;
-                }
-            }
-
-            if (!isRuleAvailable) // если правило не подходит - пропуск
+            if (rule.Mark != RuleMark.None) // если метка правила не 0 (открыто, доказано или запрещено) - пропуск
                 continue;
 
-            _openRules.Push(rule); // иначе мы нашли потомка, кладем правило на вершину стека открытых правил
-            Log($"{RuleToString(rule)} - выбрано, кладем в стек открытых правил");
-            return 1; // в глубину идем только по одному потомку
+            _openRules.Push(rule); // мы нашли потомка, кладем правило в голову стека открытых правил
+            rule.Mark = RuleMark.Opened; // метку выбранного правила устанавливаем в 1
+            Log($"{RuleToString(rule)} выбрано, кладем в стек открытых правил");
+
+            // новые подцели - входы правила, которые не входят в список закрытых вершин;
+            // кладем их по порядку, поэтому первым раскрывается последний вход
+            var newSubGoals = rule.In.Where(c => c.Mark != ConditionMark.Closed).ToList();
+            foreach (var newSubGoal in newSubGoals)
+                _openConditions.Push(newSubGoal);
+
+            foreach (var ruleCondition in rule.In.Where(c => c.Mark == ConditionMark.Closed))
+                Log($"Вход {ruleCondition.Num} закрыт " +
+                    (_conditionToRule.TryGetValue(ruleCondition, out var proofRule)
+                        ? $"(доказан правилом R{proofRule.Num})"
+                        : "(начальный факт)"));
+
+            if (newSubGoals.Count > 0)
+                Log($"Новые подцели: {string.Join(", ", newSubGoals.Select(c => c.Num))} - уходим в глубину");
+            else
+                Labeling(); // все входы закрыты - новых подцелей нет, правило доказано
+
+            return 1;
         }
 
         // потомков нет
@@ -141,57 +150,43 @@ public class SearchInDepthFromGoal
 
     private void Labeling()
     {
-        var rule = _openRules.Peek(); // текущее правило - вершина стека открытых правил
-        LogStep($"Labeling: Проверяем входы правила {RuleToString(rule)}");
+        var isModuleProved = true; // f_m: правило (модуль) из головы стека доказано
 
-        foreach (var ruleCondition in rule.In) // пройдемся по всем входным вершинам правила
+        while (!_hasAnswer && isModuleProved)
         {
-            if (ruleCondition.Mark == ConditionMark.Closed) // если она закрыта, то все хорошо, продолжаем проверку
-            {
-                Log($"Вход {ruleCondition.Num} закрыт " +
-                    (_conditionToRule.TryGetValue(ruleCondition, out var proofRule)
-                        ? $"(доказан правилом R{proofRule.Num})"
-                        : "(начальный факт)"));
-                continue;
-            }
+            var rule = _openRules.Pop(); // доказанное правило убираем из стека открытых правил...
+            rule.Mark = RuleMark.Confirmed; // ...помечаем как доказанное...
+            _confirmedRules.Add(rule); // ...и переносим в список закрытых правил
 
-            // если вход запрещен (его не удалось доказать в другой ветке), то и правило доказать невозможно
-            if (ruleCondition.Mark == ConditionMark.Denied)
+            _openConditions.Pop(); // подцель доказана, убираем ее из стека открытых вершин
+            rule.Out.Mark = ConditionMark.Closed; // закрываем ее
+            _closedConditions.Add(rule.Out); // добавляем в список закрытых вершин
+            _conditionToRule[rule.Out] = rule; // запоминаем, каким правилом доказано условие
+
+            Log($"Labeling: правило R{rule.Num} доказано, вершина {rule.Out.Num} закрыта");
+
+            if (rule.Out == _endCondition) // если вершина вывода искомая...
             {
-                _openRules.Pop(); // убираем правило из стека открытых правил
-                rule.Mark = RuleMark.Denied; // помечаем правило как запрещенное
-                _deniedRules.Add(rule); // записываем его в соответствующий список
-                Log($"Вход {ruleCondition.Num} запрещен - ОТКАТ: правило R{rule.Num} запрещено");
-                Log($"Возвращаемся к подцели {_openConditions.Peek().Num}, для нее будет искаться другое правило");
+                Log($"Доказана цель {_endCondition.Num} - РЕШЕНИЕ НАЙДЕНО");
+                _hasAnswer = true; // .. то есть решение
                 return;
             }
 
-            // если она не закрыта, то это новая подцель, кладем ее на вершину стека открытых вершин...
-            _openConditions.Push(ruleCondition);
-            Log($"Вход {ruleCondition.Num} не доказан - новая подцель, уходим в глубину");
-            return; // ...и уходим в глубину
-        }
+            // подцели, которые оказались доказаны в другой ветке, тоже убираем из стека
+            while (_openConditions.Peek().Mark == ConditionMark.Closed)
+            {
+                var closed = _openConditions.Pop();
+                Log($"Подцель {closed.Num} уже доказана правилом R{_conditionToRule[closed].Num}, убираем из стека");
+            }
 
-        // все входные вершины закрыты, значит правило доказано
-        _openRules.Pop(); // убираем правило из стека открытых правил
-        rule.Mark = RuleMark.Confirmed; // пометим правило как подтвержденное
-        _confirmedRules.Add(rule); // запишем его в соответствующий список
+            // в правиле из головы стека проверяем, все ли входные вершины доказаны
+            var parentRule = _openRules.Peek();
+            isModuleProved = parentRule.In.All(c => c.Mark == ConditionMark.Closed);
 
-        _openConditions.Pop(); // подцель доказана, убираем ее из стека открытых вершин
-        rule.Out.Mark = ConditionMark.Closed; // закрываем ее
-        _closedConditions.Add(rule.Out); // добавляем в соответствующий список
-        _conditionToRule[rule.Out] = rule; // запоминаем, каким правилом доказано условие
-
-        Log($"Все входы закрыты - правило R{rule.Num} доказано, вершина {rule.Out.Num} закрыта");
-
-        if (rule.Out == _endCondition) // если вершина вывода искомая...
-        {
-            Log($"Доказана цель {_endCondition.Num} - РЕШЕНИЕ НАЙДЕНО");
-            _hasAnswer = true; // .. то есть решение
-        }
-        else
-        {
-            Log($"Поднимаемся к правилу R{_openRules.Peek().Num}");
+            if (isModuleProved)
+                Log($"Все входы правила R{parentRule.Num} закрыты - поднимаемся выше");
+            else
+                Log($"У правила R{parentRule.Num} остались недоказанные входы, следующая подцель {_openConditions.Peek().Num}");
         }
     }
 
@@ -200,28 +195,37 @@ public class SearchInDepthFromGoal
         // подцель доказать невозможно, убираем ее из стека открытых вершин
         var subGoal = _openConditions.Pop();
 
-        subGoal.Mark = ConditionMark.Denied; // помечаем вершину как запрещенную
-        _deniedConditions.Add(subGoal); // добавляем в соответствующий список
-        Log($"Backtracking: вершина {subGoal.Num} запрещена");
-
-        // если стек открытых вершин опустел, то не доказана сама цель...
-        if (_openConditions.Count == 0)
+        if (subGoal.Mark != ConditionMark.Denied)
         {
-            // ...то нет решений, запоминаем этот вариант
-            Log($"Стек подцелей пуст, цель {_endCondition.Num} доказать невозможно - РЕШЕНИЯ НЕТ");
-            _hasNoAnswer = true; // помечаем флаг, что РЕШЕНИЯ НЕТ
-            return;
+            subGoal.Mark = ConditionMark.Denied; // помечаем вершину как запрещенную
+            _deniedConditions.Add(subGoal); // добавляем в соответствующий список
         }
+        Log($"Backtracking: вершина {subGoal.Num} запрещена");
 
         // правило, которое породило эту подцель, тоже доказать невозможно
         var rule = _openRules.Pop(); // убираем его из стека открытых правил
 
         rule.Mark = RuleMark.Denied; // помечаем правило как запрещенное
         _deniedRules.Add(rule); // записываем его в соответствующий список
-        Log($"ОТКАТ: правило R{rule.Num}, породившее подцель {subGoal.Num}, запрещено");
+        Log($"Backtracking: правило R{rule.Num}, породившее подцель {subGoal.Num}, запрещено");
 
-        // на вершине стека снова оказывается подцель-родитель, для нее будет искаться другое правило
-        Log($"Возвращаемся к подцели {_openConditions.Peek().Num}, для нее будет искаться другое правило");
+        // убираем из стека остальные подцели, которые положило запрещенное правило: они лежат подряд
+        // на вершине стека; ниже могут лежать такие же вершины, но они принадлежат родительскому правилу
+        var removed = new List<Condition>();
+        while (_openConditions.Count > 0
+               && rule.In.Contains(_openConditions.Peek())
+               && _openConditions.Peek() != subGoal
+               && !removed.Contains(_openConditions.Peek()))
+            removed.Add(_openConditions.Pop());
+
+        if (removed.Count > 0)
+            Log($"Убираем из стека остальные входы правила R{rule.Num}: {string.Join(", ", removed.Select(c => c.Num))}");
+    }
+
+    // в стеке открытых вершин осталась только целевая вершина
+    private bool IsOnlyGoalLeft()
+    {
+        return _openConditions.Count == 1 && _openConditions.Peek() == _endCondition;
     }
 
     // ---------- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ВЫВОДА ----------

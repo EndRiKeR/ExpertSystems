@@ -4,7 +4,8 @@ public enum RuleMark
 {
     Denied = -1,
     None = 0,
-    Confirmed = 1,
+    Opened = 1,
+    Confirmed = 2,
 }
 
 public class Rule
